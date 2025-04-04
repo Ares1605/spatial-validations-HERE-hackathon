@@ -1,2 +1,6 @@
 # the directory for the chicago base dataset directory
 BASE_DATASETS_DIR=
+
+# the HERE credentials found at: https://platform.here.com/portal/
+HERE_APP_ID=
+HERE_API_KEY=
