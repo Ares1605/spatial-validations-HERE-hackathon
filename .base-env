@@ -4,3 +4,6 @@ BASE_DATASETS_DIR=
 # the HERE credentials found at: https://platform.here.com/portal/
 HERE_APP_ID=
 HERE_API_KEY=
+
+# the port for the flask application to run on
+PORT=
