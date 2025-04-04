@@ -17,6 +17,7 @@ const summaryEl = document.getElementById('summary'); // Summary section
 const totalFixedEl = document.getElementById('total-fixed'); // Total fixed element
 const attrFixedEl = document.getElementById('attr-fixed'); // Attribution fixed element
 const segmentFixedEl = document.getElementById('segment-fixed'); // Segment fixed element
+const signNonExistFixedEl = document.getElementById('sign-exist-fixed'); // Segment fixed element
 const fixPercentageEl = document.getElementById('fix-percentage'); // Total fix percentage
 const attrPercentageEl = document.getElementById('attr-percentage'); // Attr fix percentage
 const segmentPercentageEl = document.getElementById('segment-percentage'); // Segment fix percentage
@@ -84,6 +85,7 @@ let totalViolations = 0; // Running total violations processed
 let totalFixedCount = 0; // Running total fixed violations
 let attrFixedCount = 0; // Running total attribution fixes
 let segmentFixedCount = 0; // Running total segment fixes
+let signNonExistFixedCount= 0; // Running total segment fixes
 let tilesProcessedCount = 0; // Count of tiles fully processed
 
 // Arrays to store correction details (keep existing)
@@ -201,21 +203,21 @@ function updateCorrectionsDetails() {
 
 // --- Updated Chart Function ---
 // Update the visualization chart (calculates remaining based on total V)
-function updateViolationsChart(currentTotalViolations, currentAttrFixed, currentSegmentFixed) {
+function updateViolationsChart(currentTotalViolations, currentAttrFixed, currentSegmentFixed, currentSignNonExistFixed) {
     if (currentTotalViolations > 0) {
-        const totalFixed = currentAttrFixed + currentSegmentFixed;
+        const totalFixed = currentAttrFixed + currentSegmentFixed + currentSignNonExistFixed;
         const attrPercent = Math.min(100, (currentAttrFixed / currentTotalViolations) * 100);
         const segmentPercent = Math.min(100 - attrPercent, (currentSegmentFixed / currentTotalViolations) * 100);
         const remainingPercent = Math.max(0, 100 - attrPercent - segmentPercent);
 
-        chartAttrEl.style.width = `${attrPercent}%`;
-        chartSegmentEl.style.width = `${segmentPercent}%`;
-        chartRemainingEl.style.width = `${remainingPercent}%`;
+        // chartAttrEl.style.width = `${attrPercent}%`;
+        // chartSegmentEl.style.width = `${segmentPercent}%`;
+        // chartRemainingEl.style.width = `${remainingPercent}%`;
     } else {
-        chartAttrEl.style.width = `0%`;
-        chartSegmentEl.style.width = `0%`;
-        chartRemainingEl.style.width = `100%`;
-        chartRemainingEl.style.backgroundColor = '#ecf0f1';
+        // chartAttrEl.style.width = `0%`;
+        // chartSegmentEl.style.width = `0%`;
+        // chartRemainingEl.style.width = `100%`;
+        // chartRemainingEl.style.backgroundColor = '#ecf0f1';
     }
 }
 
@@ -226,14 +228,15 @@ function updateSummaryUI() {
     totalFixedEl.textContent = totalFixedCount;
     attrFixedEl.textContent = attrFixedCount;
     segmentFixedEl.textContent = segmentFixedCount;
+    signNonExistFixedEl.textContent = signNonExistFixedCount;
 
     const totalFixPercent = totalViolations > 0 ? ((totalFixedCount / totalViolations) * 100).toFixed(1) : 0;
     const attrFixPercent = totalViolations > 0 ? ((attrFixedCount / totalViolations) * 100).toFixed(1) : 0;
     const segmentFixPercent = totalViolations > 0 ? ((segmentFixedCount / totalViolations) * 100).toFixed(1) : 0;
 
-    fixPercentageEl.textContent = `${totalFixPercent}%`;
-    attrPercentageEl.textContent = `${attrFixPercent}%`;
-    segmentPercentageEl.textContent = `${segmentFixPercent}%`;
+    // fixPercentageEl.textContent = `${totalFixPercent}%`;
+    // attrPercentageEl.textContent = `${attrFixPercent}%`;
+    // segmentPercentageEl.textContent = `${segmentFixPercent}%`;
 
     updateViolationsChart(totalViolations, attrFixedCount, segmentFixedCount);
 
@@ -357,7 +360,8 @@ startBtn.addEventListener('click', async () => {
                         totalViolations += data.total_violations || 0;
                         attrFixedCount += data.road_attr_fixed_count || 0;
                         segmentFixedCount += data.road_segment_fixed_count || 0;
-                        totalFixedCount = attrFixedCount + segmentFixedCount;
+                        signNonExistFixedCount += data.sign_non_exist_fixed_count || 0;
+                        totalFixedCount = attrFixedCount + segmentFixedCount + signNonExistFixedCount; 
 
                         // Mark tile completed only if not already marked as error
                         if (data.current_tile && tileStatuses[data.current_tile] !== 'error') {
@@ -419,6 +423,7 @@ startBtn.addEventListener('click', async () => {
                     totalViolations = data.total_violations_processed;
                     attrFixedCount = data.total_attr_fixed;
                     segmentFixedCount = data.total_segment_fixed;
+                    signNonExistFixedCount = data.total_segment_fixed;
                     totalFixedCount = data.total_fixed;
                     tilesProcessedCount = data.total_tiles;
 

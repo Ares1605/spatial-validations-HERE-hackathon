@@ -9,6 +9,8 @@ from road_attribution_correction import RoadAttributionCorrection
 from road_segment_corrector import RoadSegmentCorrector
 from typing import Dict, List, Any, Tuple
 import os
+import random
+from sign_existence_corrector import SignExistenceCorrector
 
 # Initialize Flask app - now without a static folder to handle static files manually
 app = Flask(__name__)
@@ -105,10 +107,43 @@ def process_tiles(task_id):
                 "data": road_segment_result
             }
             
+            # Report starting the sign existence corrector
+            q.put(json.dumps({
+                "status": "processing",
+                "current_tile": tile,
+                "current_tile_index": tile_index + 1,
+                "total_tiles": total_tiles,
+                "current_step": "SignExistenceCorrector",
+                "message": f"Starting SignExistenceCorrector for tile: {tile}"
+            }, default=str))
+            
+            # Process the sign existence corrector using the remaining violations
+            # We pass the remaining violations from the previous step to check existence
+            sign_existence_corrector = SignExistenceCorrector(tile, segment_remaining_violations)
+            sign_existence_result, final_remaining_violations = sign_existence_corrector.process()
+            
+            # Package the results in the expected format
+            sign_existence_formatted = {
+                "type": "sign-existence-correction",
+                "data": sign_existence_result['data']  # Extract the data part from the result
+            }
+            
             # Calculate cumulative violations numbers
             total_violations = len(violations_data)
-            total_fixed = len(road_attr_result) + len(road_segment_result)
-            total_remaining = len(remaining_violations) + len(segment_remaining_violations)
+            total_fixed = len(road_attr_result) + len(road_segment_result) + len(sign_existence_result['data'])
+            total_remaining = len(final_remaining_violations)
+            
+            # Report completion of sign existence corrector
+            q.put(json.dumps({
+                "status": "processing",
+                "current_tile": tile,
+                "current_tile_index": tile_index + 1,
+                "total_tiles": total_tiles,
+                "current_step": "SignExistenceCorrector completed",
+                "message": f"Completed SignExistenceCorrector for tile: {tile}",
+                "sign_existence_fixed_count": len(sign_existence_result['data']),
+                "sign_existence_result": sign_existence_formatted
+            }, default=str))
             
             # Report completion of road segment corrector
             q.put(json.dumps({
@@ -121,12 +156,14 @@ def process_tiles(task_id):
                 "total_violations": total_violations,
                 "road_attr_fixed_count": len(road_attr_result),
                 "road_segment_fixed_count": len(road_segment_result),
+                "sign_existence_fixed_count": len(sign_existence_result['data']),
                 "total_fixed_count": total_fixed,
                 "total_remaining_count": total_remaining,
                 "road_attr_result": road_attr_formatted,
-                "road_segment_result": road_segment_formatted
+                "road_segment_result": road_segment_formatted,
+                "sign_existence_result": sign_existence_formatted
             }, default=str))
-            
+
         except Exception as e:
             # Report any errors for this tile but continue with the next
             q.put(json.dumps({
