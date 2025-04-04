@@ -355,8 +355,6 @@ class RoadClassifier:
         
         return results
 
-
-# Example usage
 if __name__ == "__main__":
     import argparse
     import requests

@@ -1,12 +1,11 @@
 import geopandas as gpd
 import pandas as pd
-import numpy as np
-from shapely.geometry import Point, LineString
+from shapely.geometry import Point
 import os
-from typing import Dict, List, Tuple
+from typing import Dict, Any
 from config import Config
 
-class RoadSignReassignment:
+class RoadSegmentCorrector:
     def __init__(self, tile: str, startAtViolationI: int = 0):
         """
         Initialize the road sign reassignment solution.
@@ -498,28 +497,29 @@ class RoadSignReassignment:
         # Create simple DataFrame with only the essential information
         return pd.DataFrame(results)
     
-    def process(self):
-        """Main processing function"""
-        self.load_data()
-        results = self.analyze_violations()
+    def process(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Main processing function
         
-        # Print a simplified summary of results
-        if len(results) > 0:
-            print("\n=== REASSIGNMENT SUMMARY ===")
-            print(f"Found {len(results)} violations that should be reassigned:")
-            for i, row in results.iterrows():
-                print(f"{i+1}. Violation: {row['violation_id']}")
-                print(f"   Sign: {row['sign_id']}")
-                print(f"   Reassign from: {row['current_topology_id']}")
-                print(f"   Reassign to: {row['new_topology_id']}")
-                print(f"   Confidence: {row['confidence_score']:.4f}")
-                print("")
-        else:
-            print("\nNo reassignments recommended.")
-            
-        return results
+        Returns:
+            Dictionary with violation IDs as keys and reassignment details as values
+        """
+        self.load_data()
+        results_df = self.analyze_violations()
+        
+        # Convert DataFrame to dictionary keyed by violation_id
+        results_dict = {}
+        for _, row in results_df.iterrows():
+            violation_id = row['violation_id']
+            results_dict[violation_id] = {
+                'sign_id': row['sign_id'],
+                'current_topology_id': row['current_topology_id'],
+                'new_topology_id': row['new_topology_id'],
+                'confidence_score': row['confidence_score']
+            }
+        
+        return results_dict
 
-# Example usage
 if __name__ == "__main__":
     import argparse
     
@@ -532,7 +532,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     # Initialize and run the processor with the specified parameters
-    processor = RoadSignReassignment(args.tile, startAtViolationI=args.start)
+    processor = RoadSegmentCorrector(args.tile, startAtViolationI=args.start)
     results = processor.process()
     
     # Simple final output for easy parsing

@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from coord import Coord
 from road_classifier import RoadClassifier
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List, Any
 from config import Config
 
 class RoadAttributionCorrection:
@@ -31,13 +31,6 @@ class RoadAttributionCorrection:
         violations_path = os.path.join(Config.BASE_DATSET_DIR, f"{self.tile}/{self.tile}_validations.geojson")
         self.violations_data = gpd.read_file(violations_path)
         
-        # Print columns to help with debugging
-        print(f"Topology data columns: {self.topology_data.columns.tolist()}")
-        print(f"Violations data columns: {self.violations_data.columns.tolist()}")
-        
-        print(f"Loaded {len(self.topology_data)} topology features")
-        print(f"Loaded {len(self.violations_data)} violation features")
-
     def extract_topology_id_from_error(self, error_message: str) -> str:
         """
         Extract topology ID from violation error message.
@@ -115,7 +108,6 @@ class RoadAttributionCorrection:
             )]
             
         if matching_topologies is None or len(matching_topologies) == 0:
-            print(f"Topology {topology_id} not found")
             return None
         
         # Extract the first matching topology
@@ -147,7 +139,6 @@ class RoadAttributionCorrection:
                 return props['pedestrian']
             
             # If we reach here, we couldn't find pedestrian access info
-            print(f"Could not find pedestrian access info for topology {topology_id}")
             return False
             
         except Exception as e:
@@ -171,7 +162,6 @@ class RoadAttributionCorrection:
         
         # Check if the classifier is confident enough (threshold can be adjusted)
         if confidence < 0.7:
-            print(f"Classification confidence too low: {confidence:.4f}")
             return False
         
         # Determine if correction is needed based on the predicted class
@@ -185,20 +175,20 @@ class RoadAttributionCorrection:
         # No correction needed
         return False
 
-    def process(self):
+    def process(self) -> Dict[str, Dict[str, Any]]:
         """
         Process violations and identify topology corrections based on AI classification.
         
         Returns:
-            DataFrame with topology correction recommendations
+            Dictionary with violation IDs as keys and correction details as values
         """
         self.load_data()
         
-        corrections = []
+        # Use a dictionary to store corrections keyed by violation ID
+        corrections_dict = {}
+        
         # Get violations data as a list to use the startAtViolationI parameter
         violations_list = list(self.violations_data.iterrows())
-        
-        print(f"Starting analysis from violation index {self.startAtViolationI}")
         
         # Process violations
         for idx, violation in violations_list[self.startAtViolationI:]:
@@ -206,100 +196,49 @@ class RoadAttributionCorrection:
             violation_id = violation.get('Violation ID', f"violation_{idx}")
             error_message = violation.get('Error Message', '')
             
-            print(f"\nProcessing violation {violation_id}")
-            
             # Extract coordinates and topology ID
             coordinates = self.extract_coordinates_from_error(error_message)
             topology_id = self.extract_topology_id_from_error(error_message)
             
-            if coordinates is None:
-                print(f"Could not extract coordinates from error message for violation {violation_id}")
-                continue
-                
-            if topology_id is None:
-                print(f"Could not extract topology ID from error message for violation {violation_id}")
+            if coordinates is None or topology_id is None:
                 continue
             
             lat, lon = coordinates
-            print(f"Coordinates: Lat {lat}, Lon {lon}")
-            print(f"Topology ID: {topology_id}")
             
             # Get satellite image for the coordinates
-            print("Fetching satellite image...")
             try:
                 content = Coord(lat, lon).get_satellite_image()
-            except Exception as e:
-                print(f"Error fetching satellite image: {e}")
+            except Exception:
                 continue
             
             # Classify the image
-            print("Classifying image...")
             try:
                 classification_result = self.classifier.classify(content)
-                
-                # Print classification results
-                print("\nClassification Results:")
-                print(f"Predicted Class: {classification_result['class_name']}")
-                print(f"Confidence: {classification_result['confidence']:.4f} ({classification_result['confidence']*100:.2f}%)")
-            except Exception as e:
-                print(f"Error during classification: {e}")
+            except Exception:
                 continue
             
             # Get current pedestrian access status from topology
             pedestrian_access = self.get_topology_pedestrian_access(topology_id)
-            print(f"Current topology pedestrian access: {pedestrian_access}")
             
             if pedestrian_access is None:
-                print("Could not determine current pedestrian access status")
                 continue
             
             # Compare classification with topology
             correction_needed = self.compare_classification_with_topology(classification_result, pedestrian_access)
             
-            # If correction is needed, add to results
+            # If correction is needed, add to results dictionary
             if correction_needed:
-                correction = {
-                    'violation_id': violation_id,
+                corrections_dict[violation_id] = {
                     'topology_id': topology_id,
-                    'coordinates': f"{lat},{lon}",
+                    'coordinates': (lat, lon),
                     'current_pedestrian_access': pedestrian_access,
                     'recommended_pedestrian_access': not pedestrian_access,
                     'classification_result': classification_result['class_name'],
                     'confidence': classification_result['confidence']
                 }
-                
-                corrections.append(correction)
-                
-                print("\nCORRECTION RECOMMENDED:")
-                print(f"  Violation ID: {violation_id}")
-                print(f"  Topology ID: {topology_id}")
-                print(f"  Current pedestrian access: {pedestrian_access}")
-                print(f"  Recommended pedestrian access: {not pedestrian_access}")
-                print(f"  Classification: {classification_result['class_name']}")
-                print(f"  Confidence: {classification_result['confidence']:.4f}")
         
-        # Create DataFrame from corrections
-        corrections_df = pd.DataFrame(corrections)
-        
-        # Print summary
-        if len(corrections) > 0:
-            print("\n=== CORRECTIONS SUMMARY ===")
-            print(f"Found {len(corrections)} topologies that need pedestrian access correction:")
-            for i, correction in enumerate(corrections):
-                print(f"{i+1}. Violation: {correction['violation_id']}")
-                print(f"   Topology: {correction['topology_id']}")
-                print(f"   Change pedestrian access from {correction['current_pedestrian_access']} to {correction['recommended_pedestrian_access']}")
-                print(f"   Classification: {correction['classification_result']} (Confidence: {correction['confidence']:.4f})")
-                print("")
-            
-            # Save results to CSV
-            output_file = "road_attribution_corrections.csv"
-            corrections_df.to_csv(output_file, index=False)
-            print(f"Results saved to {output_file}")
-        else:
-            print("\nNo corrections recommended.")
-        
-        return corrections_df
+        return corrections_dict
+
 
 # Example usage
 if __name__ == "__main__":
@@ -310,8 +249,6 @@ if __name__ == "__main__":
     parser.add_argument('--start', type=int, default=0, help='Index of the violation to start processing from')
     parser.add_argument('--tile', type=str, default="23599610", 
                         help='Directory containing the dataset files')
-    parser.add_argument('--output', type=str, default="road_attribution_corrections.csv",
-                        help='Output file for correction results')
     
     # Parse arguments
     args = parser.parse_args()
@@ -320,11 +257,11 @@ if __name__ == "__main__":
     processor = RoadAttributionCorrection(args.tile, startAtViolationI=args.start)
     results = processor.process()
     
+    # Output summary to console
     if len(results) == 0:
         print("No corrections recommended.")
     else:
-        for _, row in results.iterrows():
-            print(f"CORRECT: Violation={row['violation_id']}, Topology={row['topology_id']}, " 
-                  f"Pedestrian={row['current_pedestrian_access']} → {row['recommended_pedestrian_access']}")
-    
-    print("\nAnalysis complete.")
+        print("\n--- FINAL CORRECTION RESULTS ---")
+        for violation_id, correction in results.items():
+            print(f"CORRECT: Violation={violation_id}, Topology={correction['topology_id']}, " 
+                  f"Pedestrian={correction['current_pedestrian_access']} → {correction['recommended_pedestrian_access']}")
