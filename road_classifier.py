@@ -6,14 +6,19 @@ from PIL import Image
 import os
 import warnings
 import logging
-logging.disable(logging.WARNING)
-# Add at the beginning of RoadClassifier.__init__
-# Silence TensorFlow warning logging
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-logging.getLogger('tensorflow').setLevel(logging.ERROR)
-
+# More aggressive TensorFlow logging suppression
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TF logging
 # Silence Python warnings
 warnings.filterwarnings('ignore')
+
+# Disable CUDA/GPU warnings and disable XLA
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # Force CPU usage
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices=false'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN optimizations
+
+logging.disable(logging.WARNING)
+logging.getLogger('tensorflow').setLevel(logging.ERROR)
+
 
 # Disable computation placer warnings
 os.environ['TF_COMPUTATION_PLACER_DISABLE_WARNING'] = '1'
