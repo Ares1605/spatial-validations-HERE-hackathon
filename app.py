@@ -9,11 +9,9 @@ from road_attribution_correction import RoadAttributionCorrection
 from road_segment_corrector import RoadSegmentCorrector
 from typing import Dict, List, Any, Tuple
 import os
-from flask_cors import CORS  # Add this import
 
 # Initialize Flask app - now without a static folder to handle static files manually
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
 
 # Dictionary to store progress queues for each task
 progress_queues = {}
