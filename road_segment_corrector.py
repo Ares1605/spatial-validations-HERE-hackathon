@@ -4,9 +4,10 @@ import numpy as np
 from shapely.geometry import Point, LineString
 import os
 from typing import Dict, List, Tuple
+from config import Config
 
 class RoadSignReassignment:
-    def __init__(self, tile_dir: str, startAtViolationI: int = 0):
+    def __init__(self, tile: str, startAtViolationI: int = 0):
         """
         Initialize the road sign reassignment solution.
         
@@ -14,7 +15,7 @@ class RoadSignReassignment:
             base_dir: Base directory containing the dataset files
             startAtViolationI: Index of the violation to start processing from (default: 0)
         """
-        self.tile_dir = tile_dir
+        self.tile = tile
         self.topology_data = None
         self.signs_data = None
         self.violations_data = None
@@ -23,15 +24,15 @@ class RoadSignReassignment:
     def load_data(self):
         """Load all required datasets"""
         # Load topology data
-        topology_path = os.path.join(self.tile_dir, "23599610_full_topology_data.geojson")
+        topology_path = os.path.join(Config.BASE_DATSET_DIR, f"{self.tile}/{self.tile}_full_topology_data.geojson")
         self.topology_data = gpd.read_file(topology_path)
         
         # Load signs data
-        signs_path = os.path.join(self.tile_dir, "23599610_signs.geojson")
+        signs_path = os.path.join(Config.BASE_DATSET_DIR, f"{self.tile}/{self.tile}_signs.geojson")
         self.signs_data = gpd.read_file(signs_path)
         
         # Load violations data
-        violations_path = os.path.join(self.tile_dir, "23599610_validations.geojson")
+        violations_path = os.path.join(Config.BASE_DATSET_DIR, f"{self.tile}/{self.tile}_validations.geojson")
         self.violations_data = gpd.read_file(violations_path)
         
         # Print columns to help with debugging
@@ -525,13 +526,13 @@ if __name__ == "__main__":
     # Set up command line argument parsing
     parser = argparse.ArgumentParser(description='Road Sign Reassignment Tool')
     parser.add_argument('--start', type=int, default=0, help='Index of the violation to start processing from')
-    parser.add_argument('--data-dir', type=str, default="datasets/Chicago_Hackathon_base_datasets/23599610", 
+    parser.add_argument('--tile', type=str, default="23599610", 
                         help='Directory containing the dataset files')
     # Parse arguments
     args = parser.parse_args()
     
     # Initialize and run the processor with the specified parameters
-    processor = RoadSignReassignment(args.data_dir, startAtViolationI=args.start)
+    processor = RoadSignReassignment(args.tile, startAtViolationI=args.start)
     results = processor.process()
     
     # Simple final output for easy parsing

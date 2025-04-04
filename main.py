@@ -5,6 +5,7 @@ import tensorflow as tf
 from dotenv import load_dotenv
 from coord import Coord
 from road_classifier import RoadClassifier
+from road_attribution_correction import RoadAttributionCorrection
 
 # More aggressive TensorFlow logging suppression
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TF logging
@@ -25,10 +26,10 @@ logging.basicConfig(level=logging.ERROR)
 # Load environment variables
 load_dotenv()
 
-# Define constants
-BASE_DATASET_NAME = 'Chicago_Hackathon_base_datasets'
-BASE_DATASET_DIR = os.getenv('BASE_DATASETS_DIR')
 
+result = RoadAttributionCorrection('23599610').process()
+print("===========\nROAD ATTRIBUTION CORRECTION\n==========")
+print(result)
 # Get satellite image from coordinates
 print("Fetching satellite image...")
 content = Coord(49.192900000000002, 8.1283499999999993).get_satellite_image()

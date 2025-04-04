@@ -8,3 +8,5 @@ venv/
 # IDEs
 *.swp
 .vscode/
+
+__pycache__
