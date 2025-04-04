@@ -1,1 +1,10 @@
 /datasets
+
+# Environments
+.env
+.venv/
+venv/
+
+# IDEs
+*.swp
+.vscode/
