@@ -3,11 +3,11 @@ import os
 import pandas as pd
 from coord import Coord
 from road_classifier import RoadClassifier
-from typing import Dict, Tuple, List, Any
+from typing import Dict, Tuple, List, Any, Union
 from config import Config
 
 class RoadAttributionCorrection:
-    def __init__(self, tile: str, startAtViolationI: int = 0):
+    def __init__(self, tile: str, violations_data):
         """
         Initialize the road attribution correction tool.
         
@@ -16,9 +16,9 @@ class RoadAttributionCorrection:
             startAtViolationI: Index of the violation to start processing from
         """
         self.tile = tile
-        self.startAtViolationI = startAtViolationI
+        self.startAtViolationI = 0
         self.topology_data = None
-        self.violations_data = None
+        self.violations_data = violations_data
         self.classifier = RoadClassifier()
 
     def load_data(self):
@@ -26,10 +26,6 @@ class RoadAttributionCorrection:
         # Load topology data
         topology_path = os.path.join(Config.BASE_DATSET_DIR, f"{self.tile}/{self.tile}_full_topology_data.geojson")
         self.topology_data = gpd.read_file(topology_path)
-        
-        # Load violations data
-        violations_path = os.path.join(Config.BASE_DATSET_DIR, f"{self.tile}/{self.tile}_validations.geojson")
-        self.violations_data = gpd.read_file(violations_path)
         
     def extract_topology_id_from_error(self, error_message: str) -> str:
         """
@@ -175,12 +171,14 @@ class RoadAttributionCorrection:
         # No correction needed
         return False
 
-    def process(self) -> Dict[str, Dict[str, Any]]:
+    def process(self) -> Tuple[Dict[str, Union[str, Dict[str, Dict[str, Any]]]], List[Any]]:
         """
         Process violations and identify topology corrections based on AI classification.
-        
+       
         Returns:
-            Dictionary with violation IDs as keys and correction details as values
+            Tuple containing:
+                - Dictionary with violation IDs as keys and correction details as values
+                - List of remaining violations that weren't corrected
         """
         self.load_data()
         
@@ -190,8 +188,11 @@ class RoadAttributionCorrection:
         # Get violations data as a list to use the startAtViolationI parameter
         violations_list = list(self.violations_data.iterrows())
         
+        # Create a list to track remaining violations
+        remaining_violations = []
+        
         # Process violations
-        for idx, violation in violations_list[self.startAtViolationI:]:
+        for idx, violation in violations_list:
             # Access violation information
             violation_id = violation.get('Violation ID', f"violation_{idx}")
             error_message = violation.get('Error Message', '')
@@ -201,6 +202,8 @@ class RoadAttributionCorrection:
             topology_id = self.extract_topology_id_from_error(error_message)
             
             if coordinates is None or topology_id is None:
+                # Keep this violation as uncorrected
+                remaining_violations.append(violation)
                 continue
             
             lat, lon = coordinates
@@ -209,18 +212,24 @@ class RoadAttributionCorrection:
             try:
                 content = Coord(lat, lon).get_satellite_image()
             except Exception:
+                # Keep this violation as uncorrected
+                remaining_violations.append(violation)
                 continue
             
             # Classify the image
             try:
                 classification_result = self.classifier.classify(content)
             except Exception:
+                # Keep this violation as uncorrected
+                remaining_violations.append(violation)
                 continue
             
             # Get current pedestrian access status from topology
             pedestrian_access = self.get_topology_pedestrian_access(topology_id)
             
             if pedestrian_access is None:
+                # Keep this violation as uncorrected
+                remaining_violations.append(violation)
                 continue
             
             # Compare classification with topology
@@ -236,8 +245,11 @@ class RoadAttributionCorrection:
                     'classification_result': classification_result['class_name'],
                     'confidence': classification_result['confidence']
                 }
+            else:
+                # Keep this violation as uncorrected
+                remaining_violations.append(violation)
         
-        return corrections_dict
+        return {'type': 'road-attribution-correction', 'data': corrections_dict}, remaining_violations
 
 
 # Example usage

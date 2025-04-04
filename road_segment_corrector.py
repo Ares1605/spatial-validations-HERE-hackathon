@@ -2,11 +2,11 @@ import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Point
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, List, Union
 from config import Config
 
 class RoadSegmentCorrector:
-    def __init__(self, tile: str, startAtViolationI: int = 0):
+    def __init__(self, tile: str, violations_data):
         """
         Initialize the road sign reassignment solution.
         
@@ -18,7 +18,8 @@ class RoadSegmentCorrector:
         self.topology_data = None
         self.signs_data = None
         self.violations_data = None
-        self.startAtViolationI = startAtViolationI
+        self.startAtViolationI = 0
+        self.violations_data = violations_data
         
     def load_data(self):
         """Load all required datasets"""
@@ -30,19 +31,35 @@ class RoadSegmentCorrector:
         signs_path = os.path.join(Config.BASE_DATSET_DIR, f"{self.tile}/{self.tile}_signs.geojson")
         self.signs_data = gpd.read_file(signs_path)
         
-        # Load violations data
-        violations_path = os.path.join(Config.BASE_DATSET_DIR, f"{self.tile}/{self.tile}_validations.geojson")
-        self.violations_data = gpd.read_file(violations_path)
+        # Handle different types of violations_data
+        if isinstance(self.violations_data, list):
+            # Convert list to DataFrame if needed
+            if len(self.violations_data) > 0 and hasattr(self.violations_data[0], '_asdict'):
+                # If it's a list of named tuples
+                self.violations_data = pd.DataFrame([v._asdict() for v in self.violations_data])
+            else:
+                # Convert simple list to DataFrame
+                self.violations_data = pd.DataFrame(self.violations_data)
         
         # Print columns to help with debugging
         print(f"Topology data columns: {self.topology_data.columns.tolist()}")
         print(f"Signs data columns: {self.signs_data.columns.tolist()}")
-        print(f"Violations data columns: {self.violations_data.columns.tolist()}")
+        
+        # Safely print violations data columns
+        if hasattr(self.violations_data, 'columns'):
+            print(f"Violations data columns: {self.violations_data.columns.tolist()}")
+        else:
+            print(f"Violations data is not a DataFrame. Type: {type(self.violations_data)}")
         
         print(f"Loaded {len(self.topology_data)} topology features")
         print(f"Loaded {len(self.signs_data)} sign features")
-        print(f"Loaded {len(self.violations_data)} violation features")
-    
+        
+        # Safely print violations count
+        if hasattr(self.violations_data, '__len__'):
+            print(f"Loaded {len(self.violations_data)} violation features")
+        else:
+            print("Violations data count unknown")
+        
     def extract_topology_id_from_error(self, error_message: str) -> str:
         """
         Extract topology ID from violation error message.
@@ -496,16 +513,33 @@ class RoadSegmentCorrector:
         
         # Create simple DataFrame with only the essential information
         return pd.DataFrame(results)
-    
-    def process(self) -> Dict[str, Dict[str, Any]]:
+    def process(self) -> Tuple[Dict[str, Union[str, Dict[str, Any]]], List[Any]]:
         """
         Main processing function
         
         Returns:
-            Dictionary with violation IDs as keys and reassignment details as values
+            Tuple containing:
+                - Dictionary with violation IDs as keys and reassignment details as values
+                - List of remaining violations that weren't corrected
         """
         self.load_data()
         results_df = self.analyze_violations()
+        
+        # Create a list to track uncorrected violations
+        remaining_violations = []
+        
+        # Get violations data as a list to use the startAtViolationI parameter
+        violations_list = list(self.violations_data.iterrows())
+        
+        # Keep track of violations that have been corrected
+        corrected_violation_ids = set(results_df['violation_id'].tolist() if not results_df.empty else [])
+        
+        # Add all violations that didn't get corrections to the remaining list
+        for idx, violation in violations_list[self.startAtViolationI:]:
+            violation_id = violation.get('Violation ID', f"violation_{idx}")
+            
+            if violation_id not in corrected_violation_ids:
+                remaining_violations.append(violation)
         
         # Convert DataFrame to dictionary keyed by violation_id
         results_dict = {}
@@ -518,8 +552,7 @@ class RoadSegmentCorrector:
                 'confidence_score': row['confidence_score']
             }
         
-        return results_dict
-
+        return {'type': 'road-segment-corrector', 'data': results_dict}, remaining_violations   
 if __name__ == "__main__":
     import argparse
     

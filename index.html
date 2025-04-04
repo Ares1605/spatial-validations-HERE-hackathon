@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Road Attribution Processor</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Road Attribution Processor</h1>
+        
+        <div class="controls">
+            <button id="start-btn">Start Processing All Tiles</button>
+        </div>
+        
+        <div class="progress-container">
+            <div class="status" id="status">Ready to process tiles</div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div id="progress-text">0%</div>
+        </div>
+        
+        <div class="tile-info" id="current-tile-info" style="display: none;">
+            <div>
+                <strong>Current Tile:</strong> <span id="current-tile">-</span>
+            </div>
+            <div>
+                <strong>Progress:</strong> <span id="tile-progress">-</span>
+            </div>
+            <div>
+                <strong>Current Step:</strong> <span id="current-step">-</span>
+            </div>
+        </div>
+        
+        <div id="tile-grid" class="tile-grid">
+            <!-- Tile boxes will be added here dynamically -->
+        </div>
+        
+        <div class="summary" id="summary">
+            <h3>Processing Summary</h3>
+            <div class="chart-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #3498db;"></div>
+                    <span>Attribution Fixes</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #2ecc71;"></div>
+                    <span>Segment Fixes</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #e74c3c;"></div>
+                    <span>Unfixed Violations</span>
+                </div>
+            </div>
+            <div class="violations-chart">
+                <div class="chart-attr" id="chart-attr"></div>
+                <div class="chart-segment" id="chart-segment"></div>
+                <div class="chart-remaining" id="chart-remaining"></div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="label">Total Tiles Processed</div>
+                    <div class="value" id="total-tiles-processed">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Total Violations</div>
+                    <div class="value" id="total-violations">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Total Fixed Violations</div>
+                    <div class="value" id="total-fixed">0</div>
+                    <div class="label" id="fix-percentage">0%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Road Attribution Fixes</div>
+                    <div class="value" id="attr-fixed">0</div>
+                    <div class="label" id="attr-percentage">0%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Road Segment Fixes</div>
+                    <div class="value" id="segment-fixed">0</div>
+                    <div class="label" id="segment-percentage">0%</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="corrections-details" id="corrections-details">
+            <h3>Correction Details <button id="toggle-details-btn" class="toggle-btn">Show</button></h3>
+            <div id="corrections-content" style="display: none;">
+                <h4>Road Attribution Corrections</h4>
+                <div class="corrections-list" id="attr-corrections-list">
+                    <table class="detail-table" id="attr-corrections-table">
+                        <thead>
+                            <tr>
+                                <th>Violation ID</th>
+                                <th>Topology ID</th>
+                                <th>Current Access</th>
+                                <th>Recommended Access</th>
+                                <th>Confidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <h4>Road Segment Corrections</h4>
+                <div class="corrections-list" id="segment-corrections-list">
+                    <table class="detail-table" id="segment-corrections-table">
+                        <thead>
+                            <tr>
+                                <th>Violation ID</th>
+                                <th>Sign ID</th>
+                                <th>Current Topology</th>
+                                <th>New Topology</th>
+                                <th>Confidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <h3>Processing Logs</h3>
+        <div class="logs" id="logs"></div>
+        
+        <h3>Raw JSON Data <button id="toggle-json-btn" class="toggle-btn">Show</button></h3>
+        <div class="raw-json" id="raw-json" style="display: none;"></div>
+    </div>
+    
+    <script src="index.js"></script>
+</body>
+</html>
