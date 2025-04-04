@@ -1,0 +1,2 @@
+0 Pedestrian Roads
+1 Non-Pedestrian Roads

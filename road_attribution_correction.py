@@ -6,6 +6,25 @@ from dotenv import load_dotenv
 from coord import Coord
 from road_classifier import RoadClassifier
 
+class RoadAttributionCorrection():
+    def __init__(self, tile_dir: str, startAtViolationI: int = 0):
+        self.tile_dir = tile_dir
+    def process():
+        # Get satellite image from coordinates
+        print("Fetching satellite image...")
+        content = Coord(49.192900000000002, 8.1283499999999993).get_satellite_image()
+
+        # Initialize classifier and get predictions
+        print("Classifying image...")
+        classifier = RoadClassifier()
+        result = classifier.classify(content)
+
+        # Print results
+        print("\nClassification Results:")
+        print(f"Predicted Class: {result['class_name']}")
+        print(f"Confidence: {result['confidence']:.4f} ({result['confidence']*100:.2f}%)")
+
+
 # More aggressive TensorFlow logging suppression
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TF logging
 warnings.filterwarnings('ignore')
@@ -29,16 +48,3 @@ load_dotenv()
 BASE_DATASET_NAME = 'Chicago_Hackathon_base_datasets'
 BASE_DATASET_DIR = os.getenv('BASE_DATASETS_DIR')
 
-# Get satellite image from coordinates
-print("Fetching satellite image...")
-content = Coord(49.192900000000002, 8.1283499999999993).get_satellite_image()
-
-# Initialize classifier and get predictions
-print("Classifying image...")
-classifier = RoadClassifier()
-result = classifier.classify(content)
-
-# Print results
-print("\nClassification Results:")
-print(f"Predicted Class: {result['class_name']}")
-print(f"Confidence: {result['confidence']:.4f} ({result['confidence']*100:.2f}%)")
