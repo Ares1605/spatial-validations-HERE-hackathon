@@ -97,17 +97,14 @@ def process_tiles(task_id):
                 "message": f"Starting RoadSegmentCorrector for tile: {tile}"
             }, default=str))
             
-            # Process the road segment corrector
             road_segment_corrector = RoadSegmentCorrector(tile, violations_data)
             road_segment_result, segment_remaining_violations = road_segment_corrector.process()
             
-            # Package the results in the expected format
             road_segment_formatted = {
                 "type": "road-segment-corrector",
                 "data": road_segment_result
             }
             
-            # Report starting the sign existence corrector
             q.put(json.dumps({
                 "status": "processing",
                 "current_tile": tile,
@@ -117,23 +114,18 @@ def process_tiles(task_id):
                 "message": f"Starting SignExistenceCorrector for tile: {tile}"
             }, default=str))
             
-            # Process the sign existence corrector using the remaining violations
-            # We pass the remaining violations from the previous step to check existence
             sign_existence_corrector = SignExistenceCorrector(tile, segment_remaining_violations)
             sign_existence_result, final_remaining_violations = sign_existence_corrector.process()
             
-            # Package the results in the expected format
             sign_existence_formatted = {
                 "type": "sign-existence-correction",
                 "data": sign_existence_result['data']  # Extract the data part from the result
             }
             
-            # Calculate cumulative violations numbers
             total_violations = len(violations_data)
             total_fixed = len(road_attr_result) + len(road_segment_result) + len(sign_existence_result['data'])
             total_remaining = len(final_remaining_violations)
             
-            # Report completion of sign existence corrector
             q.put(json.dumps({
                 "status": "processing",
                 "current_tile": tile,

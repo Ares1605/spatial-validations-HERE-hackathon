@@ -31,7 +31,6 @@ class RoadSegmentCorrector:
         signs_path = os.path.join(Config.BASE_DATSET_DIR, f"{self.tile}/{self.tile}_signs.geojson")
         self.signs_data = gpd.read_file(signs_path)
         
-        # Handle different types of violations_data
         if isinstance(self.violations_data, list):
             # Convert list to DataFrame if needed
             if len(self.violations_data) > 0 and hasattr(self.violations_data[0], '_asdict'):
@@ -41,11 +40,9 @@ class RoadSegmentCorrector:
                 # Convert simple list to DataFrame
                 self.violations_data = pd.DataFrame(self.violations_data)
         
-        # Print columns to help with debugging
         print(f"Topology data columns: {self.topology_data.columns.tolist()}")
         print(f"Signs data columns: {self.signs_data.columns.tolist()}")
         
-        # Safely print violations data columns
         if hasattr(self.violations_data, 'columns'):
             print(f"Violations data columns: {self.violations_data.columns.tolist()}")
         else:
@@ -70,7 +67,6 @@ class RoadSegmentCorrector:
         Returns:
             Topology ID as a string
         """
-        # Extract the topology ID from error message
         if "associated to a Topology" in error_message:
             start_idx = error_message.find("associated to a Topology") + len("associated to a Topology ")
             end_idx = error_message.find(" that has a range")
@@ -354,10 +350,8 @@ class RoadSegmentCorrector:
         Returns:
             Pandas Series containing the sign data
         """
-        # Check if 'id' exists directly in the columns
         if 'id' in self.signs_data.columns:
             matching_signs = self.signs_data[self.signs_data['id'] == sign_id]
-        # Check if we need to access properties.id
         elif 'properties' in self.signs_data.columns:
             matching_signs = self.signs_data[self.signs_data['properties'].apply(lambda x: x.get('id') == sign_id)]
         # If we have a full nested properties structure
@@ -388,10 +382,8 @@ class RoadSegmentCorrector:
         """
         results = []
         
-        # Get violations data as a list to use the startAtViolationI parameter
         violations_list = list(self.violations_data.iterrows())
         
-        # Check if startAtViolationI is valid
         if self.startAtViolationI < 0 or self.startAtViolationI >= len(violations_list):
             print(f"Warning: startAtViolationI {self.startAtViolationI} is out of range. Using 0 instead.")
             self.startAtViolationI = 0

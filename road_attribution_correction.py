@@ -182,33 +182,25 @@ class RoadAttributionCorrection:
         """
         self.load_data()
         
-        # Use a dictionary to store corrections keyed by violation ID
         corrections_dict = {}
         
-        # Get violations data as a list to use the startAtViolationI parameter
         violations_list = list(self.violations_data.iterrows())
         
-        # Create a list to track remaining violations
         remaining_violations = []
         
-        # Process violations
         for idx, violation in violations_list:
-            # Access violation information
             violation_id = violation.get('Violation ID', f"violation_{idx}")
             error_message = violation.get('Error Message', '')
             
-            # Extract coordinates and topology ID
             coordinates = self.extract_coordinates_from_error(error_message)
             topology_id = self.extract_topology_id_from_error(error_message)
             
             if coordinates is None or topology_id is None:
-                # Keep this violation as uncorrected
                 remaining_violations.append(violation)
                 continue
             
             lat, lon = coordinates
             
-            # Get satellite image for the coordinates
             try:
                 content = Coord(lat, lon).get_satellite_image()
             except Exception:

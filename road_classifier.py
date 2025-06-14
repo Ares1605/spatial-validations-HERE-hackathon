@@ -42,13 +42,10 @@ class RoadClassifier:
         # Set environment variables to suppress TensorFlow warnings
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TF logging
         
-        # Try to load with custom objects to handle compatibility issues
         try:
-            # Load the model and optimize it for inference
             self.model = keras.models.load_model(model_path)
         except (ValueError, TypeError) as e:
             try:
-                # Try loading with TensorFlow's approach
                 import tensorflow as tf
                 tf.get_logger().setLevel('ERROR') # or 'CRITICAL', etc.
                 
@@ -107,7 +104,6 @@ class RoadClassifier:
         
         self.input_size = (input_size, input_size)
         
-        # Warm up the model by running inference on a dummy input
         self._warmup_model()
     
     def _optimize_with_tflite(self):
@@ -115,12 +111,10 @@ class RoadClassifier:
         try:
             import tensorflow as tf
             
-            # Create a converter to generate a TFLite model
             converter = tf.lite.TFLiteConverter.from_keras_model(self.model)
             converter.optimizations = [tf.lite.Optimize.DEFAULT]
             tflite_model = converter.convert()
             
-            # Load the TFLite model
             self.interpreter = tf.lite.Interpreter(model_content=tflite_model)
             self.interpreter.allocate_tensors()
             
@@ -270,7 +264,6 @@ class RoadClassifier:
             # Get class name
             class_name = self.labels[class_idx]
             
-            # Return a minimal result first, with a method to get all predictions if needed
             result = {
                 'class_index': class_idx,
                 'class_name': class_name,
@@ -316,10 +309,8 @@ class RoadClassifier:
                 else:
                     raise TypeError("Each input must be a file path (str) or binary image data (bytes)")
             
-            # Stack all preprocessed images into a single batch
             batch_imgs = np.vstack(batch_imgs)
             
-            # Make batch prediction
             if hasattr(self, 'using_tflite') and self.using_tflite:
                 # TFLite doesn't support batching as easily, so we process one by one
                 batch_predictions = []
