@@ -6,6 +6,9 @@
 [![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Keras](https://img.shields.io/badge/Keras-D00000?logo=keras&logoColor=fff)](https://keras.io/)
 
+<a href="https://github.com/westconn24/garden-app">Connor West</a><br>
+<a href="https://github.com/DavidBodansky">David Bodansky</a><br>
+<a href="https://github.com/Ares1605">Ares Stavropoulos</a><br><br>
 Our 2nd place submission for the Spatial Validations HERE Hackathon of 2025.
 
 Private presentation: https://uic365-my.sharepoint.com/:p:/g/personal/cwest23_uic_edu/EQUnWS7y6lFBo6q4lI4QhDoBul2Td-mYC9kCEUnlVkuYrw?e=4%3alZSzyN&at=9
